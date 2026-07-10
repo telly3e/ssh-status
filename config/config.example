@@ -1,0 +1,15 @@
+# ssh-status configuration. Values are parsed as plain key=value data;
+# this file is not sourced as shell code.
+
+# ocean, forest, or mono
+theme=ocean
+
+# Show Docker status when the docker CLI is installed. The query is read-only.
+docker=true
+
+# Comma- or space-separated shell patterns matched against mount points.
+# Example: /boot/efi,/snap/*
+disk_exclude=
+
+# auto uses Unicode on UTF-8 terminals; true forces ASCII borders and bars.
+ascii=auto
