@@ -126,7 +126,7 @@ read_os_value() {
 }
 
 setup_style() {
-    THEME="${CLI_THEME:-${SSH_STATUS_THEME:-${CONFIG_THEME:-retro-arcade}}}"
+    THEME="${CLI_THEME:-${SSH_STATUS_THEME:-${CONFIG_THEME:-forest}}}"
     case "$THEME" in retro-arcade|ocean|forest|mono) ;; *) die "unknown theme: $THEME" ;; esac
 
     DOCKER_ENABLED="${SSH_STATUS_DOCKER:-$CONFIG_DOCKER}"

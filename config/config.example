@@ -2,7 +2,7 @@
 # this file is not sourced as shell code.
 
 # retro-arcade, ocean, forest, or mono
-theme=retro-arcade
+theme=forest
 
 # Show Docker status when the docker CLI is installed. The query is read-only.
 docker=true
