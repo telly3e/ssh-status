@@ -96,6 +96,18 @@ case "${DOCKER_MODE:-ok}" in
 esac
 EOF
 
+cat > "$TMP_DIR/bin/sudo" <<'EOF'
+#!/usr/bin/env bash
+case "${SUDO_MODE:-denied}" in
+  docker)
+    [[ "${1:-}" == -n ]] || exit 2
+    shift
+    DOCKER_MODE=ok "$@"
+    ;;
+  denied) exit 1 ;;
+esac
+EOF
+
 chmod +x "$TMP_DIR/bin/"*
 
 run_panel() {
@@ -123,7 +135,11 @@ assert_contains "$output" 'unhealthy: api' 'reports unhealthy containers'
 assert_contains "$output" 'exited: old' 'reports exited containers'
 
 output="$(DOCKER_MODE=denied run_panel)"
-assert_contains "$output" '未授权读取 Docker 状态' 'degrades on Docker permission failure'
+assert_contains "$output" '无法读取 Docker 状态' 'degrades when direct and sudo Docker queries fail'
+
+output="$(DOCKER_MODE=denied SUDO_MODE=docker run_panel)"
+assert_contains "$output" '3 containers: 2 running, 1 stopped' 'uses non-interactive sudo fallback for Docker'
+assert_contains "$output" 'unhealthy: api' 'preserves Docker health details through sudo'
 
 output="$(SYSTEMD_MODE=failed SSH_STATUS_DOCKER=0 run_panel)"
 assert_contains "$output" 'systemd: nginx.service' 'reports failed systemd units'
