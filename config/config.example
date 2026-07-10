@@ -13,3 +13,6 @@ disk_exclude=
 
 # auto uses Unicode on UTF-8 terminals; true forces ASCII borders and bars.
 ascii=auto
+
+# Maximum panel width. Narrow terminals are detected automatically.
+max_width=96

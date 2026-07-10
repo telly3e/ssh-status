@@ -15,6 +15,7 @@ CONFIG_THEME=""
 CONFIG_DOCKER="1"
 CONFIG_DISK_EXCLUDE=""
 CONFIG_ASCII="auto"
+CONFIG_MAX_WIDTH="96"
 
 PROC_ROOT="${SSH_STATUS_PROC_ROOT:-/proc}"
 OS_RELEASE="${SSH_STATUS_OS_RELEASE:-/etc/os-release}"
@@ -72,6 +73,7 @@ load_config() {
             docker) CONFIG_DOCKER="$value" ;;
             disk_exclude) CONFIG_DISK_EXCLUDE="$value" ;;
             ascii) CONFIG_ASCII="$value" ;;
+            max_width) CONFIG_MAX_WIDTH="$value" ;;
         esac
     done < "$CONFIG_FILE"
 }
@@ -130,19 +132,29 @@ setup_style() {
     DOCKER_ENABLED="${SSH_STATUS_DOCKER:-$CONFIG_DOCKER}"
     DISK_EXCLUDE="${SSH_STATUS_DISK_EXCLUDE:-$CONFIG_DISK_EXCLUDE}"
     ASCII_MODE="${SSH_STATUS_ASCII:-$CONFIG_ASCII}"
+    MAX_WIDTH="${SSH_STATUS_MAX_WIDTH:-$CONFIG_MAX_WIDTH}"
+    [[ "$MAX_WIDTH" =~ ^[0-9]+$ ]] || MAX_WIDTH=96
+    ((MAX_WIDTH < 50)) && MAX_WIDTH=50
+    ((MAX_WIDTH > 160)) && MAX_WIDTH=160
 
     if [[ -n "${NO_COLOR+x}" || ! -t 1 || "${TERM:-}" == dumb ]]; then
         THEME=mono
     fi
 
-    RESET='' TITLE='' OK='' WARN='' BAD='' DIM=''
+    RESET='' TITLE='' OK='' WARN='' BAD='' DIM='' BORDER=''
     if [[ "$THEME" != mono ]]; then
         RESET=$'\033[0m'
-        DIM=$'\033[2m'
-        OK=$'\033[32m'
-        WARN=$'\033[33m'
-        BAD=$'\033[31m'
-        if [[ "$THEME" == forest ]]; then TITLE=$'\033[1;32m'; else TITLE=$'\033[1;36m'; fi
+        DIM=$'\033[38;5;245m'
+        OK=$'\033[38;5;114m'
+        WARN=$'\033[38;5;214m'
+        BAD=$'\033[1;38;5;203m'
+        if [[ "$THEME" == forest ]]; then
+            TITLE=$'\033[1;38;5;78m'
+            BORDER=$'\033[38;5;238m'
+        else
+            TITLE=$'\033[1;38;5;45m'
+            BORDER=$'\033[38;5;240m'
+        fi
     fi
 
     local charmap=""
@@ -164,7 +176,7 @@ setup_style() {
         WIDTH=80
     fi
     ((WIDTH < 50)) && WIDTH=50
-    ((WIDTH > 120)) && WIDTH=120
+    ((WIDTH > MAX_WIDTH)) && WIDTH="$MAX_WIDTH"
 }
 
 repeat_char() {
@@ -229,7 +241,7 @@ clip() {
 
 border() {
     local left="$1" right="$2"
-    printf '%s%s%s\n' "$left" "$(repeat_char "$H" "$((WIDTH - 2))")" "$right"
+    printf '%s%s%s%s%s\n' "$BORDER" "$left" "$(repeat_char "$H" "$((WIDTH - 2))")" "$right" "$RESET"
 }
 
 separator() { border "$LM" "$RM"; }
@@ -249,7 +261,7 @@ panel_line() {
     text_width="$(display_width "$text")"
     pad=$((WIDTH - 4 - text_width))
     ((pad < 0)) && pad=0
-    printf '%s %s%s%s%*s %s\n' "$V" "$color" "$text" "$RESET" "$pad" '' "$V"
+    printf '%s%s%s %s%s%s%*s %s%s%s\n' "$BORDER" "$V" "$RESET" "$color" "$text" "$RESET" "$pad" '' "$BORDER" "$V" "$RESET"
 }
 
 header() {
@@ -259,7 +271,7 @@ header() {
     label="$(clip "$label" "$max")"
     label_width="$(display_width "$label")"
     fill=$((max - label_width))
-    printf '%s%s%s%s%s%s\n' "$TL" "$TITLE" "$label" "$(repeat_char "$H" "$fill")" "$RESET" "$TR"
+    printf '%s%s%s%s%s%s\n' "$TITLE" "$TL" "$label" "$(repeat_char "$H" "$fill")" "$TR" "$RESET"
 }
 
 format_bytes() {
@@ -280,7 +292,7 @@ format_uptime() {
 
 level_for_percent() {
     local percent="${1:-0}"
-    if ((percent >= 90)); then printf bad; elif ((percent >= 80)); then printf warn; else printf ok; fi
+    if ((percent >= 90)); then printf bad; elif ((percent >= 80)); then printf warn; else printf plain; fi
 }
 
 progress_bar() {

@@ -74,11 +74,11 @@ ssh-status --watch 2  # 每 2 秒刷新
 
 | 名称 | 风格 | 用途 |
 |---|---|---|
-| `ocean` | 青蓝标题、绿色正常、黄/红告警 | 默认，适合深色终端 |
-| `forest` | 绿色标题、琥珀告警 | 偏传统 Unix 风格 |
+| `ocean` | 青蓝标题、灰蓝边框、柔和绿/琥珀告警 | 默认，适合深色终端 |
+| `forest` | 柔和绿色标题、深灰边框、琥珀告警 | 偏传统 Unix 风格 |
 | `mono` | 无 ANSI 颜色 | 日志、弱终端、截图 |
 
-颜色遵从以下优先级：`--theme` > `SSH_STATUS_THEME` > 配置文件 > `ocean`。若 `NO_COLOR` 已设置、终端不是 TTY 或 `TERM=dumb`，自动退化为 `mono`。进度条使用纯 Unicode 方块，并提供 ASCII 后备模式。
+颜色遵从以下优先级：`--theme` > `SSH_STATUS_THEME` > 配置文件 > `ocean`。若 `NO_COLOR` 已设置、终端不是 TTY 或 `TERM=dumb`，自动退化为 `mono`。进度条使用纯 Unicode 方块，并提供 ASCII 后备模式。面板默认最大宽度为 96 列，可通过配置文件的 `max_width` 或环境变量 `SSH_STATUS_MAX_WIDTH` 调整；窄终端仍会自动收缩。
 
 告警颜色阈值：磁盘或内存使用率 80% 为黄，90% 为红；Docker 的 `unhealthy`、`dead`、`restarting` 为红，`exited` 为黄。
 

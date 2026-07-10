@@ -156,11 +156,14 @@ theme=forest
 docker=false
 disk_exclude=/data
 ascii=true
+max_width=60
 EOF
 output="$(run_panel --config "$TMP_DIR/test.conf")"
 assert_contains "$output" '+-' 'honors ASCII mode from configuration'
 assert_not_contains "$output" '磁盘 /data' 'honors configured disk exclusions'
 assert_not_contains "$output" 'Docker' 'honors configured Docker switch'
+first_line="${output%%$'\n'*}"
+if ((${#first_line} == 60)); then pass 'honors configured maximum panel width'; else fail 'configured maximum panel width was ignored'; fi
 
 guard_output="$(SSH_TTY=/dev/pts/0 bash "$ROOT_DIR/src/ssh-status-login.sh")"
 if [[ -z "$guard_output" ]]; then pass 'login guard is silent in non-interactive shells'; else fail 'login guard wrote to non-interactive shell'; fi
