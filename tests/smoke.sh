@@ -120,6 +120,8 @@ run_panel() {
 }
 
 output="$(SSH_STATUS_DOCKER=0 run_panel)"
+first_line="${output%%$'\n'*}"
+if ((${#first_line} == 70)); then pass 'uses compact 70-column default width'; else fail 'default panel width is not 70 columns'; fi
 assert_contains "$output" 'Fixture CPU (2C/2T)' 'renders CPU topology'
 assert_contains "$output" 'IP: 10.0.0.12' 'renders primary IPv4'
 assert_contains "$output" 'Load: 0.21 / 0.17 / 0.14' 'renders load averages'
@@ -156,11 +158,14 @@ theme=forest
 docker=false
 disk_exclude=/data
 ascii=true
+max_width=60
 EOF
 output="$(run_panel --config "$TMP_DIR/test.conf")"
 assert_contains "$output" '+-' 'honors ASCII mode from configuration'
 assert_not_contains "$output" '磁盘 /data' 'honors configured disk exclusions'
 assert_not_contains "$output" 'Docker' 'honors configured Docker switch'
+first_line="${output%%$'\n'*}"
+if ((${#first_line} == 60)); then pass 'honors configured maximum panel width'; else fail 'configured maximum panel width was ignored'; fi
 
 guard_output="$(SSH_TTY=/dev/pts/0 bash "$ROOT_DIR/src/ssh-status-login.sh")"
 if [[ -z "$guard_output" ]]; then pass 'login guard is silent in non-interactive shells'; else fail 'login guard wrote to non-interactive shell'; fi
@@ -177,6 +182,20 @@ if [[ ! -e "$TMP_DIR/root/usr/local/bin/ssh-status" && -f "$TMP_DIR/root/etc/ssh
     pass 'uninstaller removes code and preserves configuration'
 else
     fail 'uninstaller did not preserve the expected state'
+fi
+
+mkdir -p "$TMP_DIR/bootstrap-source/ssh-status-fixture/src" "$TMP_DIR/bootstrap-source/ssh-status-fixture/config"
+cp "$ROOT_DIR/install.sh" "$TMP_DIR/bootstrap-source/ssh-status-fixture/install.sh"
+cp "$ROOT_DIR/src/ssh-status" "$TMP_DIR/bootstrap-source/ssh-status-fixture/src/ssh-status"
+cp "$ROOT_DIR/src/ssh-status-login.sh" "$TMP_DIR/bootstrap-source/ssh-status-fixture/src/ssh-status-login.sh"
+cp "$ROOT_DIR/config/config.example" "$TMP_DIR/bootstrap-source/ssh-status-fixture/config/config.example"
+tar -czf "$TMP_DIR/bootstrap-fixture.tar.gz" -C "$TMP_DIR/bootstrap-source" ssh-status-fixture
+DESTDIR="$TMP_DIR/bootstrap-root" SSH_STATUS_ARCHIVE_FILE="$TMP_DIR/bootstrap-fixture.tar.gz" \
+    bash "$ROOT_DIR/bootstrap.sh" >/dev/null
+if [[ -x "$TMP_DIR/bootstrap-root/usr/local/bin/ssh-status" && -f "$TMP_DIR/bootstrap-root/etc/profile.d/20-ssh-status.sh" ]]; then
+    pass 'network bootstrap delegates a validated archive to the installer'
+else
+    fail 'network bootstrap install is incomplete'
 fi
 
 if ((FAIL > 0)); then

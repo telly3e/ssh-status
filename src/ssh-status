@@ -15,6 +15,7 @@ CONFIG_THEME=""
 CONFIG_DOCKER="1"
 CONFIG_DISK_EXCLUDE=""
 CONFIG_ASCII="auto"
+CONFIG_MAX_WIDTH="70"
 
 PROC_ROOT="${SSH_STATUS_PROC_ROOT:-/proc}"
 OS_RELEASE="${SSH_STATUS_OS_RELEASE:-/etc/os-release}"
@@ -28,7 +29,7 @@ Render a read-only local system status panel.
 
 Options:
   --watch [SECONDS]  refresh continuously (default: 2 seconds)
-  --theme NAME       ocean, forest, or mono
+  --theme NAME       retro-arcade, ocean, forest, or mono
   --config FILE      read configuration from FILE
   --help              show this help
   --version           show the version
@@ -72,6 +73,7 @@ load_config() {
             docker) CONFIG_DOCKER="$value" ;;
             disk_exclude) CONFIG_DISK_EXCLUDE="$value" ;;
             ascii) CONFIG_ASCII="$value" ;;
+            max_width) CONFIG_MAX_WIDTH="$value" ;;
         esac
     done < "$CONFIG_FILE"
 }
@@ -124,25 +126,57 @@ read_os_value() {
 }
 
 setup_style() {
-    THEME="${CLI_THEME:-${SSH_STATUS_THEME:-${CONFIG_THEME:-ocean}}}"
-    case "$THEME" in ocean|forest|mono) ;; *) die "unknown theme: $THEME" ;; esac
+    THEME="${CLI_THEME:-${SSH_STATUS_THEME:-${CONFIG_THEME:-forest}}}"
+    case "$THEME" in retro-arcade|ocean|forest|mono) ;; *) die "unknown theme: $THEME" ;; esac
 
     DOCKER_ENABLED="${SSH_STATUS_DOCKER:-$CONFIG_DOCKER}"
     DISK_EXCLUDE="${SSH_STATUS_DISK_EXCLUDE:-$CONFIG_DISK_EXCLUDE}"
     ASCII_MODE="${SSH_STATUS_ASCII:-$CONFIG_ASCII}"
+    MAX_WIDTH="${SSH_STATUS_MAX_WIDTH:-$CONFIG_MAX_WIDTH}"
+    [[ "$MAX_WIDTH" =~ ^[0-9]+$ ]] || MAX_WIDTH=70
+    ((MAX_WIDTH < 50)) && MAX_WIDTH=50
+    ((MAX_WIDTH > 160)) && MAX_WIDTH=160
 
     if [[ -n "${NO_COLOR+x}" || ! -t 1 || "${TERM:-}" == dumb ]]; then
         THEME=mono
     fi
 
-    RESET='' TITLE='' OK='' WARN='' BAD='' DIM=''
+    RESET='' TITLE='' TEXT='' OK='' WARN='' BAD='' DIM='' BORDER='' ACCENT=''
     if [[ "$THEME" != mono ]]; then
         RESET=$'\033[0m'
-        DIM=$'\033[2m'
-        OK=$'\033[32m'
-        WARN=$'\033[33m'
-        BAD=$'\033[31m'
-        if [[ "$THEME" == forest ]]; then TITLE=$'\033[1;32m'; else TITLE=$'\033[1;36m'; fi
+        case "$THEME" in
+            retro-arcade)
+                # Palette: #FF00FF #00FFFF #FFFF00 #FF69B4 #7B68EE
+                TITLE=$'\033[1;38;2;0;255;255m'
+                TEXT=$'\033[38;2;255;105;180m'
+                OK=$'\033[38;2;0;255;255m'
+                WARN=$'\033[1;38;2;255;255;0m'
+                ACCENT=$'\033[1;38;2;255;255;0m'
+                BAD=$'\033[1;38;2;255;0;255m'
+                DIM=$'\033[38;2;123;104;238m'
+                BORDER=$'\033[38;2;123;104;238m'
+                ;;
+            forest)
+                TITLE=$'\033[1;38;5;78m'
+                TEXT=$'\033[38;5;252m'
+                OK=$'\033[38;5;114m'
+                WARN=$'\033[38;5;214m'
+                ACCENT=$'\033[38;5;214m'
+                BAD=$'\033[1;38;5;203m'
+                DIM=$'\033[38;5;245m'
+                BORDER=$'\033[38;5;238m'
+                ;;
+            ocean)
+                TITLE=$'\033[1;38;5;45m'
+                TEXT=$'\033[38;5;252m'
+                OK=$'\033[38;5;114m'
+                WARN=$'\033[38;5;214m'
+                ACCENT=$'\033[38;5;214m'
+                BAD=$'\033[1;38;5;203m'
+                DIM=$'\033[38;5;245m'
+                BORDER=$'\033[38;5;240m'
+                ;;
+        esac
     fi
 
     local charmap=""
@@ -164,7 +198,7 @@ setup_style() {
         WIDTH=80
     fi
     ((WIDTH < 50)) && WIDTH=50
-    ((WIDTH > 120)) && WIDTH=120
+    ((WIDTH > MAX_WIDTH)) && WIDTH="$MAX_WIDTH"
 }
 
 repeat_char() {
@@ -229,7 +263,7 @@ clip() {
 
 border() {
     local left="$1" right="$2"
-    printf '%s%s%s\n' "$left" "$(repeat_char "$H" "$((WIDTH - 2))")" "$right"
+    printf '%s%s%s%s%s\n' "$BORDER" "$left" "$(repeat_char "$H" "$((WIDTH - 2))")" "$right" "$RESET"
 }
 
 separator() { border "$LM" "$RM"; }
@@ -242,14 +276,15 @@ panel_line() {
         title) color="$TITLE" ;;
         ok) color="$OK" ;;
         warn) color="$WARN" ;;
+        accent) color="$ACCENT" ;;
         bad) color="$BAD" ;;
         dim) color="$DIM" ;;
-        *) color='' ;;
+        *) color="$TEXT" ;;
     esac
     text_width="$(display_width "$text")"
     pad=$((WIDTH - 4 - text_width))
     ((pad < 0)) && pad=0
-    printf '%s %s%s%s%*s %s\n' "$V" "$color" "$text" "$RESET" "$pad" '' "$V"
+    printf '%s%s%s %s%s%s%*s %s%s%s\n' "$BORDER" "$V" "$RESET" "$color" "$text" "$RESET" "$pad" '' "$BORDER" "$V" "$RESET"
 }
 
 header() {
@@ -259,7 +294,7 @@ header() {
     label="$(clip "$label" "$max")"
     label_width="$(display_width "$label")"
     fill=$((max - label_width))
-    printf '%s%s%s%s%s%s\n' "$TL" "$TITLE" "$label" "$(repeat_char "$H" "$fill")" "$RESET" "$TR"
+    printf '%s%s%s%s%s%s%s%s%s\n' "$BORDER" "$TL" "$RESET" "$TITLE" "$label" "$RESET" "$BORDER" "$(repeat_char "$H" "$fill")${TR}" "$RESET"
 }
 
 format_bytes() {
@@ -280,7 +315,7 @@ format_uptime() {
 
 level_for_percent() {
     local percent="${1:-0}"
-    if ((percent >= 90)); then printf bad; elif ((percent >= 80)); then printf warn; else printf ok; fi
+    if ((percent >= 90)); then printf bad; elif ((percent >= 80)); then printf warn; else printf plain; fi
 }
 
 progress_bar() {
@@ -391,7 +426,7 @@ render_docker() {
         [[ "$lower" == *exited* ]] && names_exited+=("$name")
     done <<< "$output"
 
-    panel_line "Docker     ${total} containers: ${running} running, ${stopped} stopped" "$([[ ${#names_unhealthy[@]} -eq 0 && ${#names_dead[@]} -eq 0 && ${#names_restart[@]} -eq 0 && ${#names_exited[@]} -eq 0 ]] && printf ok || printf warn)"
+    panel_line "Docker     ${total} containers: ${running} running, ${stopped} stopped" accent
     ((${#names_unhealthy[@]})) && panel_line "           ! unhealthy: ${names_unhealthy[*]}" bad
     ((${#names_dead[@]})) && panel_line "           ! dead: ${names_dead[*]}" bad
     ((${#names_restart[@]})) && panel_line "           ! restarting: ${names_restart[*]}" bad
@@ -399,7 +434,7 @@ render_docker() {
 }
 
 render_health() {
-    local failed='' rc=0 services='' distro id_like reboot='N/A' reboot_level=dim
+    local failed='' rc=0 services='' distro id_like reboot='N/A' reboot_level=accent
     separator
 
     if command -v systemctl >/dev/null 2>&1; then
@@ -409,19 +444,19 @@ render_health() {
             if [[ -n "$services" ]]; then
                 panel_line "系统健康  ! systemd: ${services}" bad
             else
-                panel_line '系统健康  systemd: OK' ok
+                panel_line '系统健康  systemd: OK' accent
             fi
         else
-            panel_line '系统健康  systemd: N/A' dim
+            panel_line '系统健康  systemd: N/A' accent
         fi
     else
-        panel_line '系统健康  systemd: N/A' dim
+        panel_line '系统健康  systemd: N/A' accent
     fi
 
     distro="$(read_os_value ID 2>/dev/null || true)"
     id_like="$(read_os_value ID_LIKE 2>/dev/null || true)"
     if [[ "$distro $id_like" == *debian* || "$distro $id_like" == *ubuntu* ]]; then
-        if [[ -e "$REBOOT_FILE" ]]; then reboot='需要重启'; reboot_level=bad; else reboot='no'; reboot_level=ok; fi
+        if [[ -e "$REBOOT_FILE" ]]; then reboot='需要重启'; reboot_level=bad; else reboot='no'; reboot_level=accent; fi
     fi
     panel_line "           Reboot: ${reboot}" "$reboot_level"
 }
