@@ -113,6 +113,30 @@ ssh-status/
 
 ## 安装、测试与卸载
 
+### 一键在线安装
+
+在 Debian、Ubuntu 等 Linux VPS 上运行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/telly3e/ssh-status/main/bootstrap.sh | sudo bash
+```
+
+该命令下载 GitHub `main` 分支源码包并调用仓库内的 `install.sh`。重复执行可升级程序，已有 `/etc/ssh-status.conf` 配置不会被覆盖。一键卸载程序与登录守卫：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/telly3e/ssh-status/main/bootstrap.sh | sudo bash -s -- --uninstall
+```
+
+如果希望执行前先审查脚本：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/telly3e/ssh-status/main/bootstrap.sh -o /tmp/ssh-status-bootstrap.sh
+less /tmp/ssh-status-bootstrap.sh
+sudo bash /tmp/ssh-status-bootstrap.sh
+```
+
+### Git 克隆安装
+
 在 Debian、Ubuntu 等使用 Bash 4+ 的 Linux VPS 上执行：
 
 ```bash
@@ -121,7 +145,7 @@ cd ssh-status
 sudo bash install.sh
 ```
 
-安装器只复制本仓库文件，不安装软件包、不访问网络。默认安装位置如下：
+仓库内的 `install.sh` 只复制文件，不安装软件包、不访问网络；`bootstrap.sh` 仅负责从 GitHub 下载源码包。默认安装位置如下：
 
 | 文件 | 安装位置 |
 |---|---|

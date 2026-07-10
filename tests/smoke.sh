@@ -184,6 +184,20 @@ else
     fail 'uninstaller did not preserve the expected state'
 fi
 
+mkdir -p "$TMP_DIR/bootstrap-source/ssh-status-fixture/src" "$TMP_DIR/bootstrap-source/ssh-status-fixture/config"
+cp "$ROOT_DIR/install.sh" "$TMP_DIR/bootstrap-source/ssh-status-fixture/install.sh"
+cp "$ROOT_DIR/src/ssh-status" "$TMP_DIR/bootstrap-source/ssh-status-fixture/src/ssh-status"
+cp "$ROOT_DIR/src/ssh-status-login.sh" "$TMP_DIR/bootstrap-source/ssh-status-fixture/src/ssh-status-login.sh"
+cp "$ROOT_DIR/config/config.example" "$TMP_DIR/bootstrap-source/ssh-status-fixture/config/config.example"
+tar -czf "$TMP_DIR/bootstrap-fixture.tar.gz" -C "$TMP_DIR/bootstrap-source" ssh-status-fixture
+DESTDIR="$TMP_DIR/bootstrap-root" SSH_STATUS_ARCHIVE_FILE="$TMP_DIR/bootstrap-fixture.tar.gz" \
+    bash "$ROOT_DIR/bootstrap.sh" >/dev/null
+if [[ -x "$TMP_DIR/bootstrap-root/usr/local/bin/ssh-status" && -f "$TMP_DIR/bootstrap-root/etc/profile.d/20-ssh-status.sh" ]]; then
+    pass 'network bootstrap delegates a validated archive to the installer'
+else
+    fail 'network bootstrap install is incomplete'
+fi
+
 if ((FAIL > 0)); then
     printf '%d smoke test(s) failed\n' "$FAIL" >&2
     exit 1
