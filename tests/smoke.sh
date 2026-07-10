@@ -120,6 +120,8 @@ run_panel() {
 }
 
 output="$(SSH_STATUS_DOCKER=0 run_panel)"
+first_line="${output%%$'\n'*}"
+if ((${#first_line} == 70)); then pass 'uses compact 70-column default width'; else fail 'default panel width is not 70 columns'; fi
 assert_contains "$output" 'Fixture CPU (2C/2T)' 'renders CPU topology'
 assert_contains "$output" 'IP: 10.0.0.12' 'renders primary IPv4'
 assert_contains "$output" 'Load: 0.21 / 0.17 / 0.14' 'renders load averages'

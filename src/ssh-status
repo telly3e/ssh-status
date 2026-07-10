@@ -15,7 +15,7 @@ CONFIG_THEME=""
 CONFIG_DOCKER="1"
 CONFIG_DISK_EXCLUDE=""
 CONFIG_ASCII="auto"
-CONFIG_MAX_WIDTH="96"
+CONFIG_MAX_WIDTH="70"
 
 PROC_ROOT="${SSH_STATUS_PROC_ROOT:-/proc}"
 OS_RELEASE="${SSH_STATUS_OS_RELEASE:-/etc/os-release}"
@@ -29,7 +29,7 @@ Render a read-only local system status panel.
 
 Options:
   --watch [SECONDS]  refresh continuously (default: 2 seconds)
-  --theme NAME       ocean, forest, or mono
+  --theme NAME       retro-arcade, ocean, forest, or mono
   --config FILE      read configuration from FILE
   --help              show this help
   --version           show the version
@@ -126,14 +126,14 @@ read_os_value() {
 }
 
 setup_style() {
-    THEME="${CLI_THEME:-${SSH_STATUS_THEME:-${CONFIG_THEME:-ocean}}}"
-    case "$THEME" in ocean|forest|mono) ;; *) die "unknown theme: $THEME" ;; esac
+    THEME="${CLI_THEME:-${SSH_STATUS_THEME:-${CONFIG_THEME:-retro-arcade}}}"
+    case "$THEME" in retro-arcade|ocean|forest|mono) ;; *) die "unknown theme: $THEME" ;; esac
 
     DOCKER_ENABLED="${SSH_STATUS_DOCKER:-$CONFIG_DOCKER}"
     DISK_EXCLUDE="${SSH_STATUS_DISK_EXCLUDE:-$CONFIG_DISK_EXCLUDE}"
     ASCII_MODE="${SSH_STATUS_ASCII:-$CONFIG_ASCII}"
     MAX_WIDTH="${SSH_STATUS_MAX_WIDTH:-$CONFIG_MAX_WIDTH}"
-    [[ "$MAX_WIDTH" =~ ^[0-9]+$ ]] || MAX_WIDTH=96
+    [[ "$MAX_WIDTH" =~ ^[0-9]+$ ]] || MAX_WIDTH=70
     ((MAX_WIDTH < 50)) && MAX_WIDTH=50
     ((MAX_WIDTH > 160)) && MAX_WIDTH=160
 
@@ -141,20 +141,39 @@ setup_style() {
         THEME=mono
     fi
 
-    RESET='' TITLE='' OK='' WARN='' BAD='' DIM='' BORDER=''
+    RESET='' TITLE='' TEXT='' OK='' WARN='' BAD='' DIM='' BORDER=''
     if [[ "$THEME" != mono ]]; then
         RESET=$'\033[0m'
-        DIM=$'\033[38;5;245m'
-        OK=$'\033[38;5;114m'
-        WARN=$'\033[38;5;214m'
-        BAD=$'\033[1;38;5;203m'
-        if [[ "$THEME" == forest ]]; then
-            TITLE=$'\033[1;38;5;78m'
-            BORDER=$'\033[38;5;238m'
-        else
-            TITLE=$'\033[1;38;5;45m'
-            BORDER=$'\033[38;5;240m'
-        fi
+        case "$THEME" in
+            retro-arcade)
+                # Palette: #FF00FF #00FFFF #FFFF00 #FF69B4 #7B68EE
+                TITLE=$'\033[1;38;2;0;255;255m'
+                TEXT=$'\033[38;2;255;105;180m'
+                OK=$'\033[38;2;0;255;255m'
+                WARN=$'\033[1;38;2;255;255;0m'
+                BAD=$'\033[1;38;2;255;0;255m'
+                DIM=$'\033[38;2;123;104;238m'
+                BORDER=$'\033[38;2;123;104;238m'
+                ;;
+            forest)
+                TITLE=$'\033[1;38;5;78m'
+                TEXT=$'\033[38;5;252m'
+                OK=$'\033[38;5;114m'
+                WARN=$'\033[38;5;214m'
+                BAD=$'\033[1;38;5;203m'
+                DIM=$'\033[38;5;245m'
+                BORDER=$'\033[38;5;238m'
+                ;;
+            ocean)
+                TITLE=$'\033[1;38;5;45m'
+                TEXT=$'\033[38;5;252m'
+                OK=$'\033[38;5;114m'
+                WARN=$'\033[38;5;214m'
+                BAD=$'\033[1;38;5;203m'
+                DIM=$'\033[38;5;245m'
+                BORDER=$'\033[38;5;240m'
+                ;;
+        esac
     fi
 
     local charmap=""
@@ -256,7 +275,7 @@ panel_line() {
         warn) color="$WARN" ;;
         bad) color="$BAD" ;;
         dim) color="$DIM" ;;
-        *) color='' ;;
+        *) color="$TEXT" ;;
     esac
     text_width="$(display_width "$text")"
     pad=$((WIDTH - 4 - text_width))
@@ -271,7 +290,7 @@ header() {
     label="$(clip "$label" "$max")"
     label_width="$(display_width "$label")"
     fill=$((max - label_width))
-    printf '%s%s%s%s%s%s\n' "$TITLE" "$TL" "$label" "$(repeat_char "$H" "$fill")" "$TR" "$RESET"
+    printf '%s%s%s%s%s%s%s%s%s\n' "$BORDER" "$TL" "$RESET" "$TITLE" "$label" "$RESET" "$BORDER" "$(repeat_char "$H" "$fill")${TR}" "$RESET"
 }
 
 format_bytes() {
