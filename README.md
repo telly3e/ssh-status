@@ -79,7 +79,7 @@ ssh-status --watch 2  # 每 2 秒刷新
 | `forest` | 柔和绿色标题、深灰边框、琥珀告警 | 偏传统 Unix 风格 |
 | `mono` | 无 ANSI 颜色 | 日志、弱终端、截图 |
 
-颜色遵从以下优先级：`--theme` > `SSH_STATUS_THEME` > 配置文件 > `retro-arcade`。`retro-arcade` 使用 `#FF00FF`、`#00FFFF`、`#FFFF00`、`#FF69B4` 和 `#7B68EE` 真彩色，并为正文与全部框线着色。若 `NO_COLOR` 已设置、终端不是 TTY 或 `TERM=dumb`，自动退化为 `mono`。进度条使用纯 Unicode 方块，并提供 ASCII 后备模式。面板默认最大宽度为 70 列，可通过配置文件的 `max_width` 或环境变量 `SSH_STATUS_MAX_WIDTH` 调整；窄终端仍会自动收缩。
+颜色遵从以下优先级：`--theme` > `SSH_STATUS_THEME` > 配置文件 > `retro-arcade`。`retro-arcade` 使用 `#FF00FF`、`#00FFFF`、`#FFFF00`、`#FF69B4` 和 `#7B68EE` 真彩色，并为正文与全部框线着色；Docker 摘要和系统健康正常状态固定使用 `#FFFF00`。若 `NO_COLOR` 已设置、终端不是 TTY 或 `TERM=dumb`，自动退化为 `mono`。进度条使用纯 Unicode 方块，并提供 ASCII 后备模式。面板默认最大宽度为 70 列，可通过配置文件的 `max_width` 或环境变量 `SSH_STATUS_MAX_WIDTH` 调整；窄终端仍会自动收缩。
 
 告警颜色阈值：磁盘或内存使用率 80% 为黄，90% 为洋红；Docker 的 `unhealthy`、`dead`、`restarting` 为洋红，`exited` 为黄。
 

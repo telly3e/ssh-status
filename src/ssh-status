@@ -141,7 +141,7 @@ setup_style() {
         THEME=mono
     fi
 
-    RESET='' TITLE='' TEXT='' OK='' WARN='' BAD='' DIM='' BORDER=''
+    RESET='' TITLE='' TEXT='' OK='' WARN='' BAD='' DIM='' BORDER='' ACCENT=''
     if [[ "$THEME" != mono ]]; then
         RESET=$'\033[0m'
         case "$THEME" in
@@ -151,6 +151,7 @@ setup_style() {
                 TEXT=$'\033[38;2;255;105;180m'
                 OK=$'\033[38;2;0;255;255m'
                 WARN=$'\033[1;38;2;255;255;0m'
+                ACCENT=$'\033[1;38;2;255;255;0m'
                 BAD=$'\033[1;38;2;255;0;255m'
                 DIM=$'\033[38;2;123;104;238m'
                 BORDER=$'\033[38;2;123;104;238m'
@@ -160,6 +161,7 @@ setup_style() {
                 TEXT=$'\033[38;5;252m'
                 OK=$'\033[38;5;114m'
                 WARN=$'\033[38;5;214m'
+                ACCENT=$'\033[38;5;214m'
                 BAD=$'\033[1;38;5;203m'
                 DIM=$'\033[38;5;245m'
                 BORDER=$'\033[38;5;238m'
@@ -169,6 +171,7 @@ setup_style() {
                 TEXT=$'\033[38;5;252m'
                 OK=$'\033[38;5;114m'
                 WARN=$'\033[38;5;214m'
+                ACCENT=$'\033[38;5;214m'
                 BAD=$'\033[1;38;5;203m'
                 DIM=$'\033[38;5;245m'
                 BORDER=$'\033[38;5;240m'
@@ -273,6 +276,7 @@ panel_line() {
         title) color="$TITLE" ;;
         ok) color="$OK" ;;
         warn) color="$WARN" ;;
+        accent) color="$ACCENT" ;;
         bad) color="$BAD" ;;
         dim) color="$DIM" ;;
         *) color="$TEXT" ;;
@@ -422,7 +426,7 @@ render_docker() {
         [[ "$lower" == *exited* ]] && names_exited+=("$name")
     done <<< "$output"
 
-    panel_line "Docker     ${total} containers: ${running} running, ${stopped} stopped" "$([[ ${#names_unhealthy[@]} -eq 0 && ${#names_dead[@]} -eq 0 && ${#names_restart[@]} -eq 0 && ${#names_exited[@]} -eq 0 ]] && printf ok || printf warn)"
+    panel_line "Docker     ${total} containers: ${running} running, ${stopped} stopped" accent
     ((${#names_unhealthy[@]})) && panel_line "           ! unhealthy: ${names_unhealthy[*]}" bad
     ((${#names_dead[@]})) && panel_line "           ! dead: ${names_dead[*]}" bad
     ((${#names_restart[@]})) && panel_line "           ! restarting: ${names_restart[*]}" bad
@@ -430,7 +434,7 @@ render_docker() {
 }
 
 render_health() {
-    local failed='' rc=0 services='' distro id_like reboot='N/A' reboot_level=dim
+    local failed='' rc=0 services='' distro id_like reboot='N/A' reboot_level=accent
     separator
 
     if command -v systemctl >/dev/null 2>&1; then
@@ -440,19 +444,19 @@ render_health() {
             if [[ -n "$services" ]]; then
                 panel_line "系统健康  ! systemd: ${services}" bad
             else
-                panel_line '系统健康  systemd: OK' ok
+                panel_line '系统健康  systemd: OK' accent
             fi
         else
-            panel_line '系统健康  systemd: N/A' dim
+            panel_line '系统健康  systemd: N/A' accent
         fi
     else
-        panel_line '系统健康  systemd: N/A' dim
+        panel_line '系统健康  systemd: N/A' accent
     fi
 
     distro="$(read_os_value ID 2>/dev/null || true)"
     id_like="$(read_os_value ID_LIKE 2>/dev/null || true)"
     if [[ "$distro $id_like" == *debian* || "$distro $id_like" == *ubuntu* ]]; then
-        if [[ -e "$REBOOT_FILE" ]]; then reboot='需要重启'; reboot_level=bad; else reboot='no'; reboot_level=ok; fi
+        if [[ -e "$REBOOT_FILE" ]]; then reboot='需要重启'; reboot_level=bad; else reboot='no'; reboot_level=accent; fi
     fi
     panel_line "           Reboot: ${reboot}" "$reboot_level"
 }
