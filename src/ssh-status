@@ -367,9 +367,16 @@ render_docker() {
     command -v docker >/dev/null 2>&1 || return 0
 
     output="$(docker ps -a --format '{{.Names}}|{{.State}}|{{.Status}}' 2>/dev/null)" || rc=$?
+    if ((rc != 0)) && command -v sudo >/dev/null 2>&1; then
+        # -n guarantees that a login banner never blocks on a password prompt.
+        # This fallback is useful on hosts where Docker is covered by a tightly
+        # scoped passwordless sudo rule but the user cannot read docker.sock.
+        rc=0
+        output="$(sudo -n docker ps -a --format '{{.Names}}|{{.State}}|{{.Status}}' 2>/dev/null)" || rc=$?
+    fi
     separator
     if ((rc != 0)); then
-        panel_line 'Docker     未授权读取 Docker 状态' warn
+        panel_line 'Docker     无法读取 Docker 状态（权限或服务异常）' warn
         return 0
     fi
 

@@ -24,7 +24,7 @@
 ╰──────────────────────────────────────────────────────────────────────╯
 ```
 
-没有安装 Docker 时，整段 Docker 信息不显示；检测不到 Docker Socket 权限时只显示“未授权读取 Docker 状态”，不会要求 `sudo` 或中断登录。
+没有安装 Docker 时，整段 Docker 信息不显示。当前用户无法读取 Docker Socket 时，脚本会尝试 `sudo -n docker ps`；该命令只接受已配置的无密码 sudo，绝不会提示输入密码或中断登录。两种方式都失败时显示“无法读取 Docker 状态（权限或服务异常）”。
 
 ## 展示范围
 
@@ -91,7 +91,7 @@ Docker 区块为只读查询，异常定义如下：
 - `status=exited`：黄色，作为停止容器计数并列出名称；
 - `running` 且健康状态为 `healthy` 或未配置健康检查：正常。
 
-脚本不自动执行 `docker restart`、`docker prune` 或任何修复动作。注意：加入 `docker` 用户组通常等价于授予主机 root 级能力；若 SSH 用户不在该组，保持无 Docker 详情是更安全的默认值。
+脚本不自动执行 `docker restart`、`docker prune` 或任何修复动作。注意：加入 `docker` 用户组或允许无密码运行 Docker 通常等价于授予主机 root 级能力；`sudo` 后备查询仅适用于管理员已经明确接受该权限模型的主机。
 
 ## 计划文件结构
 
